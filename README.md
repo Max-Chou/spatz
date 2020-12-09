@@ -6,13 +6,24 @@ Spatz is a micro WSGI Web framework for learning purposes.
 
 ## Features
 
-* Routing
+* Route
+    * Reigster Custom Handlers
+    * Parameterized URL
+    * Class-Based Handlers
+    * Default Response
+
+* Template
 
 
 ## TODO
 
+* Custom Error Handlers
 
+* Session/Cookies
 
+* Cache
+
+* Command Line Tools
 
 ## Dependency
 
@@ -23,3 +34,5 @@ Spatz is a micro WSGI Web framework for learning purposes.
 * [Requests](https://github.com/psf/requests) - Send HTTP Requests.
 
 * [WSGI Transport Adapter for Requests](https://github.com/seanbrant/requests-wsgi-adapter) - Create a simple client for testing.
+
+* [Jinja 2](https://jinja.palletsprojects.com/en/2.11.x/) - Template Engine.

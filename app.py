@@ -26,3 +26,17 @@ class BooksResource:
     
     def post(self, req, resp):
         resp.text = "Create a Book Object"
+
+
+def curse(req, resp):
+    resp.text = "Curse you!"
+
+
+app.add_route("/curse", curse)
+
+
+@app.route("/template")
+def template_handler(req, resp):
+    resp.body = app.template(
+        "index.html", context={"name": "Spatz", "title": "Best Framework"}
+    )

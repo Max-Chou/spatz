@@ -87,3 +87,15 @@ def test_alternative_route(app, client):
     app.add_route("/alternative", home)
 
     assert client.get("http://testserver/alternative").text == response_text
+
+
+def test_template(app, client):
+    @app.route("/html")
+    def html_handler(req, resp):
+        resp.body = app.template("index.html", context={"title": "Some Title", "name": "Some Name"}).encode()
+
+    response = client.get("http://testserver/html")
+
+    assert "text/html" in response.headers["Content-Type"]
+    assert "Some Title" in response.text
+    assert "Some Name" in response.text
