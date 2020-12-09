@@ -38,3 +38,12 @@ def test_spatz_test_client_send_requests(app, client):
         resp.text = RESPONSE_TEXT
     
     assert client.get("http://testserver/hey").text == RESPONSE_TEXT
+
+
+def test_parameterized_route(app, client):
+    @app.route("/{name}")
+    def hello(req, resp, name):
+        resp.text = f"hello, {name}"
+    
+    assert client.get("http://testserver/john").text == "hello, john"
+    assert client.get("http://testserver/ashley").text == "hello, ashley"
