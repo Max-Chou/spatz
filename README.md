@@ -1,29 +1,20 @@
-# README #
+# Spatz
 
-This README would normally document whatever steps are necessary to get your application up and running.
+*Spatz* German word: "Sparrow".
 
-### What is this repository for? ###
+Spatz is a micro WSGI Web framework for learning purposes. 
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+## Features
 
-### How do I get set up? ###
+* Routing
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
 
-### Contribution guidelines ###
+## TODO
 
-* Writing tests
-* Code review
-* Other guidelines
 
-### Who do I talk to? ###
 
-* Repo owner or admin
-* Other community or team contact
+
+## Dependency
+
+* [WebOb](https://docs.pylonsproject.org/projects/webob/en/stable/index.html) - HTTP request and response for WSGI app.
+
