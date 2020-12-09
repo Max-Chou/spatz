@@ -1,4 +1,5 @@
 from webob import Request, Response
+from parse import parse
 
 
 class Spatz():
@@ -39,19 +40,10 @@ class Spatz():
         """
         response = Response()
 
-        # search for path and handler
-        # for path, handler in self.routes.items():
-        #     if path == request.path:
-        #         handler(request, response)
-        #         return response
-
-        # self.default_response(response)
-        # return response
-
-        handler = self.find_handler(request_path=request.path)
+        handler, kwargs = self.find_handler(request_path=request.path)
 
         if handler:
-            handler(request, response)
+            handler(request, response, **kwargs)
         else:
             self.default_response(response)
         return response
@@ -66,5 +58,9 @@ class Spatz():
 
     def find_handler(self, request_path):
         for path, handler in self.routes.items():
-            if path == request_path:
-                return handler
+            parse_result = parse(path, request_path)
+
+            if parse_result:
+                return handler, parse_result.named
+
+        return None, None
