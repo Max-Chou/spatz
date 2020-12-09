@@ -1,0 +1,2 @@
+[run]
+omit = venv/*,test_spatz.py,conftest.py,app.py,wsgi_demo.py

@@ -3,16 +3,6 @@ import pytest
 from spatz import Spatz
 
 
-@pytest.fixture
-def app():
-    return Spatz()
-
-
-@pytest.fixture
-def client(app):
-    return app.test_session()
-
-
 def test_basic_route_adding(app):
     @app.route("/home")
     def home(req, resp):
@@ -54,3 +44,35 @@ def test_default_404_response(client):
 
     assert response.status_code == 404
     assert response.text == "Not Found."
+
+
+def test_class_based_handler_get(app, client):
+    response_text = "this is a get request"
+
+    @app.route("/book")
+    class BookResource:
+        def get(self, req, resp):
+            resp.text = response_text
+    
+    assert client.get("http://testserver/book").text == response_text
+
+
+def test_class_based_handler_post(app, client):
+    response_text = "this is a post request"
+
+    @app.route("/book")
+    class BookResource:
+        def post(self, req, resp):
+            resp.text = response_text
+
+    assert client.post("http://testserver/book").text == response_text
+
+
+def test_class_based_handler_not_allowed_method(app, client):
+    @app.route("/book")
+    class BookResource:
+        def post(self, req, resp):
+            resp.text = "no way!"
+
+    with pytest.raises(AttributeError):
+        client.get("http://testserver/book")
