@@ -1,3 +1,4 @@
+import inspect
 from webob import Request, Response
 from parse import parse
 
@@ -47,6 +48,11 @@ class Spatz():
         handler, kwargs = self.find_handler(request_path=request.path)
 
         if handler:
+            if inspect.isclass(handler):
+                handler = getattr(handler(), request.method.lower(), None)
+                if not handler:
+                    raise AttributeError("Method not allowed", request.method)
+
             handler(request, response, **kwargs)
         else:
             self.default_response(response)
