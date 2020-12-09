@@ -37,3 +37,5 @@ Spatz is a micro WSGI Web framework for learning purposes.
 * [WSGI Transport Adapter for Requests](https://github.com/seanbrant/requests-wsgi-adapter) - Create a simple client for testing.
 
 * [Jinja 2](https://jinja.palletsprojects.com/en/2.11.x/) - Template Engine.
+
+* [WhiteNoise](http://whitenoise.evans.io/en/stable/) - Serve Static Files.

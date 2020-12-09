@@ -3,6 +3,18 @@ import pytest
 from spatz import Spatz
 
 
+FILE_DIR = "css"
+FILE_NAME = "main.css"
+FILE_CONTENTS = "body {background-color: red}"
+
+# helpers
+def _create_static(static_dir):
+    asset = static_dir.mkdir(FILE_DIR).join(FILE_NAME)
+    asset.write(FILE_CONTENTS)
+
+    return asset
+
+# tests
 def test_basic_route_adding(app):
     @app.route("/home")
     def home(req, resp):
@@ -114,3 +126,20 @@ def test_custom_exception_handler(app, client):
     response = client.get("http://testserver/")
 
     assert response.text == "AttributeErrorHappened"
+
+
+def test_assets_are_served(tmpdir_factory):
+    static_dir = tmpdir_factory.mktemp("static")
+    _create_static(static_dir)
+    app = Spatz(static_dir=str(static_dir))
+    client = app.test_session()
+
+    response = client.get(f"http://testserver/{FILE_DIR}/{FILE_NAME}")
+
+    assert response.status_code == 200
+    assert response.text == FILE_CONTENTS
+
+
+# def test_middleware_methods_are_called(app, client):
+#     process_request_called = False
+#     process_response_called = False

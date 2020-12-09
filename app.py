@@ -40,3 +40,8 @@ def template_handler(req, resp):
     resp.body = app.template(
         "index.html", context={"name": "Spatz", "title": "Best Framework"}
     ).encode()
+
+
+@app.route("/exception")
+def exception_throwing_handler(request, response):
+    raise AssertionError("This handler should not be used.")
