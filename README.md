@@ -11,6 +11,7 @@ Spatz is a micro WSGI Web framework for learning purposes.
     * Parameterized URL
     * Class-Based Handlers
     * Default Response
+        * 404
 
 * Template
 

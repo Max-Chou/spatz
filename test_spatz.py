@@ -99,3 +99,18 @@ def test_template(app, client):
     assert "text/html" in response.headers["Content-Type"]
     assert "Some Title" in response.text
     assert "Some Name" in response.text
+
+
+def test_custom_exception_handler(app, client):
+    def on_exception(req, resp, exc):
+        resp.text = "AttributeErrorHappened"
+    
+    app.add_exception_handler(on_exception)
+
+    @app.route("/")
+    def index(req, resp):
+        raise AttributeError()
+
+    response = client.get("http://testserver/")
+
+    assert response.text == "AttributeErrorHappened"

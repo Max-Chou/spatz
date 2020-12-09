@@ -2,6 +2,7 @@ import os
 import inspect
 
 from webob import Request, Response
+from webob.exc import HTTPNotFound
 from parse import parse
 from requests import Session as RequestsSession
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
@@ -65,15 +66,22 @@ class Spatz():
 
         handler, kwargs = self.find_handler(request_path=request.path)
 
-        if handler:
-            if inspect.isclass(handler):
-                handler = getattr(handler(), request.method.lower(), None)
-                if not handler:
-                    raise AttributeError("Method not allowed", request.method)
+        try:
+            if handler:
+                if inspect.isclass(handler):
+                    handler = getattr(handler(), request.method.lower(), None)
+                    if not handler:
+                        raise AttributeError("Method not allowed", request.method)
 
-            handler(request, response, **kwargs)
-        else:
-            self.default_response(response)
+                handler(request, response, **kwargs)
+            else:
+                response = self.default_response(response)
+        except Exception as e:
+            if not self.exception_handler:
+                raise e
+            else:
+                self.exception_handler(request, response, e)
+
         return response
 
 
@@ -105,3 +113,7 @@ class Spatz():
             context = {}
 
         return self.templates_env.get_template(template_name).render(**context)
+
+
+    def add_exception_handler(self, exception_handler):
+        self.exception_handler = exception_handler

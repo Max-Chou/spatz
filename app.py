@@ -39,4 +39,4 @@ app.add_route("/curse", curse)
 def template_handler(req, resp):
     resp.body = app.template(
         "index.html", context={"name": "Spatz", "title": "Best Framework"}
-    )
+    ).encode()
