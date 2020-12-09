@@ -76,3 +76,14 @@ def test_class_based_handler_not_allowed_method(app, client):
 
     with pytest.raises(AttributeError):
         client.get("http://testserver/book")
+
+
+def test_alternative_route(app, client):
+    response_text = "haha"
+
+    def home(req, resp):
+        resp.text = response_text
+    
+    app.add_route("/alternative", home)
+
+    assert client.get("http://testserver/alternative").text == response_text

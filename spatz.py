@@ -19,18 +19,27 @@ class Spatz():
         return response(environ, start_response)
 
 
+    def add_route(self, path, handler):
+        """Add a new view function to the routes
+
+        :param path: url path
+        :type path: str
+        :param handler: view function
+        :type handler: function
+        """
+        assert path not in self.routes, "Such route already exists."
+
+        self.routes[path] = handler
+
+
     def route(self, path):
         """Register the function to the given path
 
         :param path: url path
-        :type path: string
+        :type path: str
         """
-        # if path in self.routes:
-        #     raise AssertionError("Such route already exists.")
-        assert path not in self.routes, "Such route already exists."
-
         def wrapper(handler):
-            self.routes[path] = handler
+            self.add_route(path, handler)
             return handler
 
         return wrapper
