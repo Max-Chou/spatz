@@ -23,6 +23,10 @@ class Spatz():
         :param path: url path
         :type path: string
         """
+        # if path in self.routes:
+        #     raise AssertionError("Such route already exists.")
+        assert path not in self.routes, "Such route already exists."
+
         def wrapper(handler):
             self.routes[path] = handler
             return handler
