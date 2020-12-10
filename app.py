@@ -38,8 +38,7 @@ app.add_route("/curse", curse)
 @app.route("/template")
 def template_handler(req, resp):
     resp.body = app.template(
-        "index.html", context={"name": "Spatz", "title": "Best Framework"}
-    ).encode()
+        "index.html", context={"name": "Spatz", "title": "Best Framework"})
 
 
 @app.route("/exception")
@@ -56,3 +55,13 @@ class SimpleCustomMiddleware(Middleware):
         print("Processing response", req.url)
 
 app.add_middleware(SimpleCustomMiddleware)
+
+
+@app.route("/json")
+def json_handler(req, resp):
+    resp.json = {"name": "data", "type": "JSON"}
+
+@app.route("/text")
+def text_handler(req, resp):
+    resp.text = "This is a simple text"
+

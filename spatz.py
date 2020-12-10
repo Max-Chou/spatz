@@ -1,8 +1,8 @@
 import os
 import inspect
 
-from webob import Request, Response
-from webob.exc import HTTPNotFound
+from webob import Request
+from webob.exc import HTTPNotFound, HTTPInternalServerError, HTTPMethodNotAllowed
 from parse import parse
 from requests import Session as RequestsSession
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
@@ -10,6 +10,8 @@ from jinja2 import Environment, FileSystemLoader
 from whitenoise import WhiteNoise
 
 from middleware import Middleware
+from response import Response
+
 
 class Spatz():
 
@@ -44,7 +46,7 @@ class Spatz():
         return response(environ, start_response)
 
 
-    def add_route(self, path, handler):
+    def add_route(self, path, handler, allowed_methods=None):
         """Add a new view function to the routes
 
         :param path: url path
@@ -54,17 +56,21 @@ class Spatz():
         """
         assert path not in self.routes, "Such route already exists."
 
-        self.routes[path] = handler
+        #self.routes[path] = handler
+        if allowed_methods:
+            self.routes[path] = {"handler": handler, "allowed_methods": allowed_methods}
+        else:
+            self.routes[path] = {"handler": handler, "allowed_methods": ["get"]}
 
 
-    def route(self, path):
+    def route(self, path, allowed_methods=None):
         """Register the function to the given path
 
         :param path: url path
         :type path: str
         """
         def wrapper(handler):
-            self.add_route(path, handler)
+            self.add_route(path, handler, allowed_methods)
             return handler
 
         return wrapper
@@ -80,23 +86,34 @@ class Spatz():
         """
         response = Response()
 
-        handler, kwargs = self.find_handler(request_path=request.path)
+        handler_data, kwargs = self.find_handler(request_path=request.path)
+        handler = None
 
         try:
-            if handler:
-                if inspect.isclass(handler):
-                    handler = getattr(handler(), request.method.lower(), None)
-                    if not handler:
-                        raise AttributeError("Method not allowed", request.method)
+            if handler_data:
+                if inspect.isclass(handler_data["handler"]):
+                    handler = getattr(handler_data["handler"](), request.method.lower(), None)
+                else:
+                    if request.method.lower() in handler_data["allowed_methods"]:
+                        handler = handler_data["handler"]
+
+                if not handler:
+                    raise AttributeError("Method not allowed", request.method)
+                    #response = HTTPMethodNotAllowed()
 
                 handler(request, response, **kwargs)
             else:
+                # client errors
                 response = self.default_response(response)
+                # response = HTTPNotFound()
+
+        # server errors
         except Exception as e:
             if not self.exception_handler:
                 raise e
             else:
                 self.exception_handler(request, response, e)
+            # response = HTTPInternalServerError()
 
         return response
 
@@ -109,11 +126,11 @@ class Spatz():
 
 
     def find_handler(self, request_path):
-        for path, handler in self.routes.items():
+        for path, handler_data in self.routes.items():
             parse_result = parse(path, request_path)
 
             if parse_result:
-                return handler, parse_result.named
+                return handler_data, parse_result.named
 
         return None, None
 
