@@ -1,6 +1,7 @@
 import pytest
 
 from spatz import Spatz
+from middleware import Middleware
 
 
 FILE_DIR = "css"
@@ -128,18 +129,46 @@ def test_custom_exception_handler(app, client):
     assert response.text == "AttributeErrorHappened"
 
 
+def test_404_is_returned_for_nonexistent_static_file(client):
+    assert client.get(f"http://testserver/static/main.text").status_code == 404
+
+
+
 def test_assets_are_served(tmpdir_factory):
     static_dir = tmpdir_factory.mktemp("static")
     _create_static(static_dir)
     app = Spatz(static_dir=str(static_dir))
     client = app.test_session()
 
-    response = client.get(f"http://testserver/{FILE_DIR}/{FILE_NAME}")
+    response = client.get(f"http://testserver/static/{FILE_DIR}/{FILE_NAME}")
 
     assert response.status_code == 200
     assert response.text == FILE_CONTENTS
 
 
-# def test_middleware_methods_are_called(app, client):
-#     process_request_called = False
-#     process_response_called = False
+def test_middleware_methods_are_called(app, client):
+    process_request_called = False
+    process_response_called = False
+
+    class CallMiddlewareMethods(Middleware):
+        def __init__(self, app):
+            super().__init__(app)
+        
+        def process_request(self, req):
+            nonlocal process_request_called
+            process_request_called = True
+
+        def process_response(self, req, resp):
+            nonlocal process_response_called
+            process_response_called = True
+    
+    app.add_middleware(CallMiddlewareMethods)
+
+    @app.route('/')
+    def index(req, res):
+        res.text = "YOLO"
+
+    client.get('http://testserver/')
+
+    assert process_request_called is True
+    assert process_response_called is True
