@@ -1,5 +1,5 @@
 from spatz import Spatz
-from middleware import Middleware
+from spatz import Middleware
 
 app = Spatz()
 

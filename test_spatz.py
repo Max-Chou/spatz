@@ -1,7 +1,7 @@
 import pytest
 
 from spatz import Spatz
-from middleware import Middleware
+from spatz import Middleware
 
 
 FILE_DIR = "css"
