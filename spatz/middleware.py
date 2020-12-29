@@ -1,4 +1,4 @@
-from webob import Request
+from werkzeug.wrappers import Request
 
 class Middleware:
     def __init__(self, app):

@@ -1,6 +1,6 @@
 import json
 
-from webob import Response as WebObResponse
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 
 class Response:
@@ -16,8 +16,8 @@ class Response:
     def __call__(self, environ, start_response):
         self.set_body_and_content_type()
 
-        response = WebObResponse(
-            body=self.body, content_type=self.content_type , status=self.status_code
+        response = WerkzeugResponse(
+            self.body, content_type=self.content_type , status=self.status_code
         )
 
         return response(environ, start_response)

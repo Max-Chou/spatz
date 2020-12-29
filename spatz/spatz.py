@@ -1,8 +1,8 @@
 import os
 import inspect
 
-from webob import Request
-from webob.exc import HTTPNotFound, HTTPInternalServerError, HTTPMethodNotAllowed
+from werkzeug.wrappers import Request
+from werkzeug.exceptions import NotFound, HTTPException, MethodNotAllowed
 from parse import parse
 from requests import Session as RequestsSession
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
@@ -98,22 +98,15 @@ class Spatz():
                         handler = handler_data["handler"]
 
                 if not handler:
-                    raise AttributeError("Method not allowed", request.method)
-                    #response = HTTPMethodNotAllowed()
+                    raise MethodNotAllowed()
 
                 handler(request, response, **kwargs)
             else:
-                # client errors
-                response = self.default_response(response)
-                # response = HTTPNotFound()
+                raise NotFound()
 
         # server errors
-        except Exception as e:
-            if not self.exception_handler:
-                raise e
-            else:
-                self.exception_handler(request, response, e)
-            # response = HTTPInternalServerError()
+        except HTTPException as e:
+            return e
 
         return response
 
