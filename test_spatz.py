@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String
 
 from spatz import Spatz
 from spatz import Middleware, SessionMiddleware
-from spatz import render_template
 from spatz import Model
 from spatz import SessionBase, ClientSession
 
@@ -108,7 +107,7 @@ def test_template(app, client):
     @app.route("/html")
     def html_handler(req, resp):
         #resp.html = app.template("index.html", context={"title": "Some Title", "name": "Some Name"})
-        resp.html = render_template("index.html", context={"title": "Some Title", "name": "Some Name"})
+        resp.render("index.html", context={"title": "Some Title", "name": "Some Name"})
 
     response = client.get("http://testserver/html")
 
@@ -201,7 +200,7 @@ def test_json_response_helper(app, client):
 def test_html_response_helper(app, client):
     @app.route("/html")
     def html_handler(req, resp):
-        resp.html = render_template("index.html", context={"title": "Spatz", "name": "Greatest Framework"})
+        resp.render("index.html", context={"title": "Spatz", "name": "Greatest Framework"})
 
     response = client.get("http://testserver/html")
 

@@ -1,6 +1,6 @@
 from werkzeug.wrappers import Request
 from datetime import datetime, timedelta
-#from .session import Session
+
 
 class Middleware:
     def __init__(self, app):
@@ -16,10 +16,8 @@ class Middleware:
         pass
 
     def handle_request(self, req):
-        # handle request before the handlers
         self.process_request(req)
         res = self.app.handle_request(req)
-
         self.process_response(req, res)
 
         return res

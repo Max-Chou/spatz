@@ -15,7 +15,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from .middleware import Middleware
 from .response import Response
 from .database import Database
-from .template import TemplateEnvironment
 from .session import ClientSession
 
 
@@ -43,15 +42,20 @@ class Spatz():
     def __init__(self, templates_dir="templates", static_dir="static"):
 
         self.routes = {}
-        self.templates_env = TemplateEnvironment
-        self.templates_env.loader = FileSystemLoader(os.path.abspath(templates_dir))
+        self.templates_env = Environment(
+            loader=FileSystemLoader(os.path.abspath(templates_dir))
+        )
         self.exception_handler = {}
         self.whitenoise = WhiteNoise(self.wsgi_app, root=static_dir, prefix="static/", max_age=31536000)
         self.middleware = Middleware(self)
         self.db = Database(self)
         self.config = self.default_config.copy()
         
+        # session interface
         self.SessionInterface = ClientSession
+
+        # cache interface
+        self.CacheInterface = None
 
 
     def __call__(self, environ, start_response):
@@ -100,7 +104,7 @@ class Spatz():
         :return: responses from view functions
         :rtype: webob.Response
         """
-        response = Response()
+        response = Response(self)
 
         handler_data, kwargs = self.find_handler(request_path=request.path)
         handler = None
@@ -124,6 +128,12 @@ class Spatz():
             return e
 
         return response
+
+
+    def render(self, template_name, context=None):
+        if context is None:
+            context = {}
+        return self.templates_env.get_template(template_name).render(**context)
 
 
     def default_response(self, response):

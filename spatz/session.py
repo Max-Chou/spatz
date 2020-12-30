@@ -15,7 +15,7 @@ class SessionBase:
         return self._session_key
 
     @property
-    def session(self, no_load=False):
+    def session(self):
         self.accessed = True
         return self._session
 
