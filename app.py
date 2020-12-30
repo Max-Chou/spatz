@@ -1,5 +1,7 @@
 from spatz import Spatz
 from spatz import Middleware
+from spatz import Model
+from spatz import render_template
 
 app = Spatz()
 
@@ -37,13 +39,8 @@ app.add_route("/curse", curse)
 
 @app.route("/template")
 def template_handler(req, resp):
-    resp.body = app.template(
+    resp.html = render_template(
         "index.html", context={"name": "Spatz", "title": "Best Framework"})
-
-
-@app.route("/exception")
-def exception_throwing_handler(request, response):
-    raise AssertionError("This handler should not be used.")
 
 
 # custom middleware
@@ -65,3 +62,6 @@ def json_handler(req, resp):
 def text_handler(req, resp):
     resp.text = "This is a simple text"
 
+
+# class User(Model):
+#     __tablename__ = 'users'

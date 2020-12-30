@@ -1,5 +1,6 @@
 import os
 import inspect
+from datetime import datetime, timedelta
 
 from werkzeug.wrappers import Request
 from werkzeug.exceptions import NotFound, HTTPException, MethodNotAllowed
@@ -9,41 +10,56 @@ from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 from jinja2 import Environment, FileSystemLoader
 from whitenoise import WhiteNoise
 
+from sqlalchemy.ext.declarative import declarative_base
+
 from .middleware import Middleware
 from .response import Response
+from .database import Database
+from .template import TemplateEnvironment
+from .session import ClientSession
 
 
 class Spatz():
+    """The Spatz WSGI Application Class.
+    Including Jinga Template Engine, Whitenoise Static files management, SQLAlchemy ORM...
+
+    You can replace the template engine or static files directory if you know well Jinga2 Template and whitenoise.
+    """
+
+    # the default configuration
+    default_config = {
+        'ENV': None,
+        'DEBUG': None,
+        'SECRET_KEY': None,
+        'SESSION_COOKIE_NAME': 'session',
+        'SESSION_COOKIE_DOMAIN': None,
+        'SESSION_COOKIE_PATH': None,
+        'SESSION_COOKIE_HTTPONLY': True,
+        'SESSION_COOKIE_SECURE': False,
+        'SESSION_COOKIE_SAMESITE': None,
+        'PERMANENT_SESSION_LIFETIME': timedelta(days=1)
+    }
 
     def __init__(self, templates_dir="templates", static_dir="static"):
 
         self.routes = {}
-
-        self.templates_env = Environment(
-            loader=FileSystemLoader(os.path.abspath(templates_dir))
-        )
-
-        self.exception_handler = None
-
-        self.whitenoise = WhiteNoise(self.wsgi_app, root=static_dir)
-
+        self.templates_env = TemplateEnvironment
+        self.templates_env.loader = FileSystemLoader(os.path.abspath(templates_dir))
+        self.exception_handler = {}
+        self.whitenoise = WhiteNoise(self.wsgi_app, root=static_dir, prefix="static/", max_age=31536000)
         self.middleware = Middleware(self)
+        self.db = Database(self)
+        self.config = self.default_config.copy()
+        
+        self.SessionInterface = ClientSession
 
 
     def __call__(self, environ, start_response):
-        path_info = environ["PATH_INFO"]
-
-        if path_info.startswith("/static"):
-            environ["PATH_INFO"] = path_info[len("/static"):]
-            return self.whitenoise(environ, start_response)
-
-        return self.middleware(environ, start_response)
+        return self.whitenoise(environ, start_response)
 
 
     def wsgi_app(self, environ, start_response):
-        request = Request(environ)
-        response = self.handle_request(request)
-        return response(environ, start_response)
+        return self.middleware(environ, start_response)
 
 
     def add_route(self, path, handler, allowed_methods=None):
@@ -104,7 +120,6 @@ class Spatz():
             else:
                 raise NotFound()
 
-        # server errors
         except HTTPException as e:
             return e
 
@@ -132,13 +147,6 @@ class Spatz():
         session = RequestsSession()
         session.mount(prefix=base_url, adapter=RequestsWSGIAdapter(self))
         return session
-
-
-    def template(self, template_name, context=None):
-        if context is None:
-            context = {}
-
-        return self.templates_env.get_template(template_name).render(**context)
 
 
     def add_exception_handler(self, exception_handler):

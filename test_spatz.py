@@ -1,7 +1,11 @@
 import pytest
+from sqlalchemy import Column, Integer, String
 
 from spatz import Spatz
-from spatz import Middleware
+from spatz import Middleware, SessionMiddleware
+from spatz import render_template
+from spatz import Model
+from spatz import SessionBase, ClientSession
 
 
 FILE_DIR = "css"
@@ -103,7 +107,8 @@ def test_alternative_route(app, client):
 def test_template(app, client):
     @app.route("/html")
     def html_handler(req, resp):
-        resp.html = app.template("index.html", context={"title": "Some Title", "name": "Some Name"})
+        #resp.html = app.template("index.html", context={"title": "Some Title", "name": "Some Name"})
+        resp.html = render_template("index.html", context={"title": "Some Title", "name": "Some Name"})
 
     response = client.get("http://testserver/html")
 
@@ -196,7 +201,7 @@ def test_json_response_helper(app, client):
 def test_html_response_helper(app, client):
     @app.route("/html")
     def html_handler(req, resp):
-        resp.html = app.template("index.html", context={"title": "Spatz", "name": "Greatest Framework"})
+        resp.html = render_template("index.html", context={"title": "Spatz", "name": "Greatest Framework"})
 
     response = client.get("http://testserver/html")
 
@@ -221,7 +226,7 @@ def test_text_response_helper(app, client):
 def test_manually_setting_body(app, client):
     @app.route("/body")
     def text_handler(req, resp):
-        resp.body = b"Byte Body"
+        resp.data = "Byte Body"
         resp.content_type = "text/plain"
     
 
@@ -229,3 +234,86 @@ def test_manually_setting_body(app, client):
 
     assert "text/plain" in response.headers["Content-Type"]
     assert response.text == "Byte Body"
+
+
+def test_database_schema(app, client):
+
+    # create database model
+    class User(Model):
+        __tablename__ = 'users'
+        id = Column(Integer, primary_key=True)
+        name = Column(String(50), unique=True)
+        email = Column(String(120), unique=True)
+
+        def __init__(self, name=None, email=None):
+            self.name = name
+            self.email = email
+
+        def __repr__(self):
+            return '<User %r>' % (self.name)
+    
+    # initialize database
+    app.db.init_db()
+    #app.add_middleware(DatabaseMiddleware)
+
+    @app.route('/user', allowed_methods=["post", "get"])
+    def create_user(req, resp):
+        if req.method == 'POST':
+            user = User(name="John", email="john@example.com")
+            req.db_session.add(user)
+            req.db_session.commit()
+        else:
+            user = User.query.filter(User.name=="John").first()
+            resp.text = f"{user.name} {user.email}"
+
+    client.post("http://testserver/user")
+    response = client.get("http://testserver/user")
+
+    assert response.text == "John john@example.com"
+
+def test_base_session():
+    session = SessionBase()
+
+    session['key'] =  'value'
+
+    assert session['key'] == 'value'
+    assert session.get('key') == 'value'
+
+
+def test_client_session():
+    session = ClientSession()
+    session['key'] = 'value'
+
+    assert session['key'] == 'value'
+    assert session.get('key') == 'value'
+
+    session.save()
+    session2 = ClientSession(session_key=session.session_key)
+    assert session2['key'] == 'value'
+
+
+def test_session_middleware(app, client):
+
+    #app.SessionInterface = ClientSession
+    app.add_middleware(SessionMiddleware)
+
+
+    session = ClientSession()
+    session['key'] = 'value'
+    session.save()
+
+
+    @app.route("/set-session")
+    def set_session(req, res):
+        req.session['key'] = 'value'
+
+    @app.route('/get-session')
+    def get_session(req, res):
+        res.text = f"{req.session['key']}"
+
+    response = client.get('http://testserver/set-session')
+    assert response.cookies['session'] == session.session_key
+
+    response = client.get('http://testserver/get-session', cookies=response.cookies)
+
+    assert response.text == 'value'
