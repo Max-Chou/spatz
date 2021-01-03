@@ -2,6 +2,7 @@ import os
 import inspect
 from datetime import datetime, timedelta
 
+from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request
 from werkzeug.exceptions import NotFound, HTTPException, MethodNotAllowed
 from parse import parse
@@ -41,7 +42,9 @@ class Spatz:
 
     def __init__(self, templates_dir="templates", static_dir="static"):
 
-        self.routes = {}
+        self.routes = Map()
+        self.handlers = {}
+
         self.templates_env = Environment(
             loader=FileSystemLoader(os.path.abspath(templates_dir))
         )
@@ -65,31 +68,40 @@ class Spatz:
     def wsgi_app(self, environ, start_response):
         return self.middleware(environ, start_response)
 
-    def add_route(self, path, handler, allowed_methods=None):
-        """Add a new view function to the routes
+    def add_route(self, rule, handler, endpoint=None, methods=["GET"]):
+        """Add a URL Rule.
 
-        :param path: url path
-        :type path: str
-        :param handler: view function
-        :type handler: function
-        """
-        assert path not in self.routes, "Such route already exists."
-
-        # self.routes[path] = handler
-        if allowed_methods:
-            self.routes[path] = {"handler": handler, "allowed_methods": allowed_methods}
-        else:
-            self.routes[path] = {"handler": handler, "allowed_methods": ["get"]}
-
-    def route(self, path, allowed_methods=None):
-        """Register the function to the given path
-
-        :param path: url path
-        :type path: str
+        :param url: the URL rule.
+        :type url: str
+        :param handler: the function handling a request
+        :type handler: callable
+        :param endpoint: the endpoint for registered URL rule, defaults to None
+        :type endpoint: str, optional
+        :param methods: allowed methods, defaults to ["GET"]
+        :type methods: list, optional
         """
 
+        # check if the rule exists
+        for r in self.routes.iter_rules():
+            if rule == r.rule:
+                raise AssertionError("Such URL already exists.")
+
+        if endpoint is None:
+            endpoint = handler.__name__
+
+        # class-based handler
+        if inspect.isclass(handler):
+            for method in ["post", "put", "delete"]:
+                if hasattr(handler, method):
+                    methods.append(method)
+
+        rule = Rule(rule, endpoint=endpoint, methods=methods)
+        self.routes.add(rule)
+        self.handlers[endpoint] = handler
+
+    def route(self, rule, **kwargs):
         def wrapper(handler):
-            self.add_route(path, handler, allowed_methods)
+            self.add_route(rule, handler, **kwargs)
             return handler
 
         return wrapper
@@ -102,27 +114,21 @@ class Spatz:
         :return: responses from view functions
         :rtype: webob.Response
         """
-        response = Response(self)
+        response = Response()
+        response.render = self.render
 
-        handler_data, kwargs = self.find_handler(request_path=request.path)
-        handler = None
-
+        urls = self.routes.bind_to_environ(request.environ)
         try:
-            if handler_data:
-                if inspect.isclass(handler_data["handler"]):
-                    handler = getattr(
-                        handler_data["handler"](), request.method.lower(), None
-                    )
-                else:
-                    if request.method.lower() in handler_data["allowed_methods"]:
-                        handler = handler_data["handler"]
+            endpoints, kwargs = urls.match()
+            handler = self.handlers[endpoints]
 
-                if not handler:
-                    raise MethodNotAllowed()
+            # class-based handler
+            if inspect.isclass(handler):
+                handler = getattr(handler(), request.method.lower(), None)
+            if not handler:
+                raise MethodNotAllowed()
 
-                handler(request, response, **kwargs)
-            else:
-                raise NotFound()
+            handler(request, response, **kwargs)
 
         except HTTPException as e:
             return e
@@ -139,15 +145,6 @@ class Spatz:
         response.text = "Not Found."
 
         return response
-
-    def find_handler(self, request_path):
-        for path, handler_data in self.routes.items():
-            parse_result = parse(path, request_path)
-
-            if parse_result:
-                return handler_data, parse_result.named
-
-        return None, None
 
     def test_session(self, base_url="http://testserver"):
         session = RequestsSession()
