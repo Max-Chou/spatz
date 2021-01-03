@@ -18,7 +18,7 @@ from .database import Database
 from .session import ClientSession
 
 
-class Spatz():
+class Spatz:
     """The Spatz WSGI Application Class.
     Including Jinga Template Engine, Whitenoise Static files management, SQLAlchemy ORM...
 
@@ -27,16 +27,16 @@ class Spatz():
 
     # the default configuration
     default_config = {
-        'ENV': None,
-        'DEBUG': None,
-        'SECRET_KEY': None,
-        'SESSION_COOKIE_NAME': 'session',
-        'SESSION_COOKIE_DOMAIN': None,
-        'SESSION_COOKIE_PATH': None,
-        'SESSION_COOKIE_HTTPONLY': True,
-        'SESSION_COOKIE_SECURE': False,
-        'SESSION_COOKIE_SAMESITE': None,
-        'PERMANENT_SESSION_LIFETIME': timedelta(days=1)
+        "ENV": None,
+        "DEBUG": None,
+        "SECRET_KEY": None,
+        "SESSION_COOKIE_NAME": "session",
+        "SESSION_COOKIE_DOMAIN": None,
+        "SESSION_COOKIE_PATH": None,
+        "SESSION_COOKIE_HTTPONLY": True,
+        "SESSION_COOKIE_SECURE": False,
+        "SESSION_COOKIE_SAMESITE": None,
+        "PERMANENT_SESSION_LIFETIME": timedelta(days=1),
     }
 
     def __init__(self, templates_dir="templates", static_dir="static"):
@@ -46,25 +46,24 @@ class Spatz():
             loader=FileSystemLoader(os.path.abspath(templates_dir))
         )
         self.exception_handler = {}
-        self.whitenoise = WhiteNoise(self.wsgi_app, root=static_dir, prefix="static/", max_age=31536000)
+        self.whitenoise = WhiteNoise(
+            self.wsgi_app, root=static_dir, prefix="static/", max_age=31536000
+        )
         self.middleware = Middleware(self)
         self.db = Database(self)
         self.config = self.default_config.copy()
-        
+
         # session interface
         self.SessionInterface = ClientSession
 
         # cache interface
         self.CacheInterface = None
 
-
     def __call__(self, environ, start_response):
         return self.whitenoise(environ, start_response)
 
-
     def wsgi_app(self, environ, start_response):
         return self.middleware(environ, start_response)
-
 
     def add_route(self, path, handler, allowed_methods=None):
         """Add a new view function to the routes
@@ -76,12 +75,11 @@ class Spatz():
         """
         assert path not in self.routes, "Such route already exists."
 
-        #self.routes[path] = handler
+        # self.routes[path] = handler
         if allowed_methods:
             self.routes[path] = {"handler": handler, "allowed_methods": allowed_methods}
         else:
             self.routes[path] = {"handler": handler, "allowed_methods": ["get"]}
-
 
     def route(self, path, allowed_methods=None):
         """Register the function to the given path
@@ -89,12 +87,12 @@ class Spatz():
         :param path: url path
         :type path: str
         """
+
         def wrapper(handler):
             self.add_route(path, handler, allowed_methods)
             return handler
 
         return wrapper
-
 
     def handle_request(self, request):
         """Handle requests and dispatch the requests to view functions
@@ -112,7 +110,9 @@ class Spatz():
         try:
             if handler_data:
                 if inspect.isclass(handler_data["handler"]):
-                    handler = getattr(handler_data["handler"](), request.method.lower(), None)
+                    handler = getattr(
+                        handler_data["handler"](), request.method.lower(), None
+                    )
                 else:
                     if request.method.lower() in handler_data["allowed_methods"]:
                         handler = handler_data["handler"]
@@ -129,19 +129,16 @@ class Spatz():
 
         return response
 
-
     def render(self, template_name, context=None):
         if context is None:
             context = {}
         return self.templates_env.get_template(template_name).render(**context)
-
 
     def default_response(self, response):
         response.status_code = 404
         response.text = "Not Found."
 
         return response
-
 
     def find_handler(self, request_path):
         for path, handler_data in self.routes.items():
@@ -152,16 +149,10 @@ class Spatz():
 
         return None, None
 
-
     def test_session(self, base_url="http://testserver"):
         session = RequestsSession()
         session.mount(prefix=base_url, adapter=RequestsWSGIAdapter(self))
         return session
-
-
-    def add_exception_handler(self, exception_handler):
-        self.exception_handler = exception_handler
-
 
     def add_middleware(self, middleware_cls):
         self.middleware.add(middleware_cls)

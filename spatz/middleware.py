@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 class Middleware:
     def __init__(self, app):
         self.app = app
-    
+
     def add(self, middleware_cls):
         self.app = middleware_cls(self.app)
-    
+
     def process_request(self, req):
         pass
 
@@ -21,7 +21,7 @@ class Middleware:
         self.process_response(req, res)
 
         return res
-    
+
     def __call__(self, environ, start_response):
         request = Request(environ)
         response = self.handle_request(request)
@@ -37,9 +37,8 @@ class SessionMiddleware(Middleware):
         session_key = req.cookies.get(self.app.config["SESSION_COOKIE_NAME"])
         req.session = self.SessionInterface(session_key=session_key)
 
-
     def process_response(self, req, res):
-        expires = datetime.utcnow() + self.app.config["PERMANENT_SESSION_LIFETIME"] 
+        expires = datetime.utcnow() + self.app.config["PERMANENT_SESSION_LIFETIME"]
         req.session.save()
         res.set_cookie(
             self.app.config["SESSION_COOKIE_NAME"],
@@ -48,5 +47,5 @@ class SessionMiddleware(Middleware):
             domain=self.app.config["SESSION_COOKIE_DOMAIN"],
             path=self.app.config["SESSION_COOKIE_PATH"],
             secure=self.app.config["SESSION_COOKIE_SECURE"],
-            httponly=self.app.config["SESSION_COOKIE_HTTPONLY"]
+            httponly=self.app.config["SESSION_COOKIE_HTTPONLY"],
         )

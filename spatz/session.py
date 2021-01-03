@@ -1,5 +1,6 @@
 from itsdangerous import URLSafeSerializer, BadSignature
 
+
 class SessionBase:
     def __init__(self, session_key=None, no_load=False):
         self._session_key = session_key
@@ -9,7 +10,7 @@ class SessionBase:
             self._session = {}
         else:
             self._session = self.load()
-        
+
     @property
     def session_key(self):
         return self._session_key
@@ -21,10 +22,10 @@ class SessionBase:
 
     def __contains__(self, key):
         return key in self.session
-    
+
     def __getitem__(self, key):
         return self.session[key]
-    
+
     def __setitem__(self, key, value):
         self.session[key] = value
         self.modified = True
@@ -87,7 +88,9 @@ class SessionBase:
         """
         Returns True if the given session_key already exists.
         """
-        raise NotImplementedError('subclasses of SessionBase must provide an exists() method')
+        raise NotImplementedError(
+            "subclasses of SessionBase must provide an exists() method"
+        )
 
     def create(self):
         """
@@ -95,7 +98,9 @@ class SessionBase:
         a unique key and will have saved the result once (with empty data)
         before the method returns.
         """
-        raise NotImplementedError('subclasses of SessionBase must provide a create() method')
+        raise NotImplementedError(
+            "subclasses of SessionBase must provide a create() method"
+        )
 
     def save(self, must_create=False):
         """
@@ -103,20 +108,26 @@ class SessionBase:
         is created (otherwise a CreateError exception is raised). Otherwise,
         save() can update an existing object with the same key.
         """
-        raise NotImplementedError('subclasses of SessionBase must provide a save() method')
+        raise NotImplementedError(
+            "subclasses of SessionBase must provide a save() method"
+        )
 
     def delete(self, session_key=None):
         """
         Deletes the session data under this key. If the key is None, the
         current session key value is used.
         """
-        raise NotImplementedError('subclasses of SessionBase must provide a delete() method')
+        raise NotImplementedError(
+            "subclasses of SessionBase must provide a delete() method"
+        )
 
     def load(self):
         """
         Loads the session data and returns a dictionary.
         """
-        raise NotImplementedError('subclasses of SessionBase must provide a load() method')
+        raise NotImplementedError(
+            "subclasses of SessionBase must provide a load() method"
+        )
 
     @classmethod
     def clear_expired(cls):
@@ -127,7 +138,7 @@ class SessionBase:
         NotImplementedError. If it isn't necessary, because the backend has
         a built-in expiration mechanism, it should be a no-op.
         """
-        raise NotImplementedError('This backend does not support clear_expired().')
+        raise NotImplementedError("This backend does not support clear_expired().")
 
 
 class ClientSession(SessionBase):
@@ -156,9 +167,9 @@ class ClientSession(SessionBase):
     def save(self):
         self._session_key = self._get_session_key()
         self.modified = True
-    
+
     def delete(self):
-        self._session_key = ''
+        self._session_key = ""
         self._session = {}
         self.modified = True
 
@@ -166,7 +177,7 @@ class ClientSession(SessionBase):
         self.save()
 
     def _get_session_key(self):
-        return self.serializer.dumps(self.session, salt='client-session')
+        return self.serializer.dumps(self.session, salt="client-session")
 
     @classmethod
     def clear_expired(cls):
